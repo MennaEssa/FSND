@@ -5,7 +5,7 @@
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for , abort
+from flask import Flask, render_template, request, Response, flash, redirect, url_for , abort , jsonify
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import logging
@@ -48,7 +48,7 @@ class Venue(db.Model):
     website = db.Column(db.String())
     seeking_talent = db.Column(db.Boolean , default=False)
     seeking_description = db.Column(db.String())
-    shows = db.relationship('Show', backref='venue', lazy=True)
+    shows = db.relationship('Show', backref='venue', lazy=True , passive_deletes=True)
 
 
 class Artist(db.Model):
@@ -67,14 +67,14 @@ class Artist(db.Model):
     website = db.Column(db.String())
     seeking_venue = db.Column(db.Boolean , default=False)
     seeking_description = db.Column(db.String())
-    shows = db.relationship('Show', backref='artist', lazy=True)
+    shows = db.relationship('Show', backref='artist', lazy=True , passive_deletes=True)
 
 
 class Show(db.Model):
   __tablename__ = 'show'
   # TODO_DONE Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
-  artist_id = db.Column( db.Integer , db.ForeignKey('artist.id') , nullable=False , primary_key=True)
-  venue_id = db.Column( db.Integer , db.ForeignKey('venue.id') , nullable = False , primary_key=True)
+  artist_id = db.Column( db.Integer , db.ForeignKey('artist.id' , ondelete='CASCADE' ) , nullable=False , primary_key=True)
+  venue_id = db.Column( db.Integer , db.ForeignKey('venue.id' , ondelete='CASCADE') , nullable = False , primary_key=True)
   start_time = db.Column(db.DateTime , nullable=False)
 
 #----------------------------------------------------------------------------#
@@ -323,12 +323,28 @@ def create_venue_submission():
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
-  # TODO: Complete this endpoint for taking a venue_id, and using
+  # TODO_Done: Complete this endpoint for taking a venue_id, and using
   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
+  error = False
+  try:
+    venue= db.session.query(Venue).filter(Venue.id==venue_id).first()
+    db.session.delete(venue)
+    db.session.commit()
+  except:
+    print(exc_info())
+    error = True
+    db.session.rollback()
+  finally:
+    db.session.close()
+  if error:
+    flash("Failed to delete venue")
+    abort(500)
+  return jsonify({'success': False})
 
-  # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
+  # TODO_DONE BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
   # clicking that button delete it from the db then redirect the user to the homepage
-  return None
+  # js in statics/js/script.js and button in templates/show_venue.html
+
 
 #  Artists
 #  ----------------------------------------------------------------
@@ -361,7 +377,7 @@ def artists():
 
 @app.route('/artists/search', methods=['POST'])
 def search_artists():
-  # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
+  # TODO_DONE: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
   # search for "band" should return "The Wild Sax Band".
   # response={
@@ -388,7 +404,7 @@ def search_artists():
     "count": len(search_result),
     "data": response_data
     }
-    
+
   except:
     print(exc_info())
     abort(500)
