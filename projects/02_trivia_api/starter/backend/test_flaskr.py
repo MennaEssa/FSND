@@ -54,12 +54,28 @@ class TriviaTestCase(unittest.TestCase):
 
     
     def test_get_categories(self):
+        '''
+        confirm the correct response format require by the frontend
+        '''
         res = self.client().get('/categories')
         data = json.loads(res.data)
         self.assertEqual(res.status_code , 200)
         self.assertIsInstance(data["categories"] , dict)
         self.assertEqual(len(data["categories"]) , 6 )
         self.assertEqual(data["total_categories"] , 6 )
+
+    def test_delete_question(self):
+        res = self.client().delete('/questions/24')
+        self.assertEqual(res.status_code , 200)
+        self.assertIsNone(Question.query.get(5))
+        #restore the item for the other tests
+        test_q = Question(question="test?" , answer="test" , category=1 , difficulty=1 )
+        test_q.insert()
+    
+    def test_delete_question_error(self):
+        res = self.client().delete('/questions/100000000')
+        self.assertEqual(res.status_code , 404)
+
 
 
 # Make the tests conveniently executable

@@ -4,9 +4,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from sys import exc_info
 import random
-
 from models import setup_db, Question, Category
-
+from werkzeug.exceptions import NotFound , InternalServerError , UnprocessableEntity
 QUESTIONS_PER_PAGE = 10
 
 
@@ -76,8 +75,6 @@ def create_app(test_config=None):
       'total_categories' : len(cat_dict)
     })
     
-
-
   '''
   @TODO_DONE: 
   Create an endpoint to handle GET requests for questions, 
@@ -107,12 +104,21 @@ def create_app(test_config=None):
     
 
   '''
-  @TODO: 
+  @TODO_DONE: 
   Create an endpoint to DELETE question using a question ID. 
-
   TEST: When you click the trash icon next to a question, the question will be removed.
   This removal will persist in the database and when you refresh the page. 
   '''
+  @app.route('/questions/<int:q_id>' , methods=['DELETE'])
+  def delete_question(q_id):
+      question = Question.query.filter(Question.id == q_id).one_or_none()
+      if question is None:
+        abort(404)
+      question.delete()
+      return jsonify({
+        'success':True,
+        'deleted':q_id,
+      })
 
   '''
   @TODO: 
@@ -172,10 +178,19 @@ def create_app(test_config=None):
   
   @app.errorhandler(404)
   def not_found(error):
-    return jsonify({ 'error':404,
+    return jsonify({
+      "success": False, 
+      "error": 404,
+      "message": "resource not found"
+      }), 404
+
+  @app.errorhandler(422)
+  def unprocessable(error):
+    return jsonify({ 'error':422,
               'success':False , 
-              'message' : 'resource not found'
-    }) , 404
+              'message' : 'could not process request'
+    }) , 422
+
 
   
   return app
