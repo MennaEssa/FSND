@@ -8,7 +8,7 @@ from models import setup_db, Question, Category
 from werkzeug.exceptions import NotFound , InternalServerError , UnprocessableEntity
 QUESTIONS_PER_PAGE = 10
 
-
+##Helper functions
 def paginate(request , query_result):
   '''
   enables pagination a query result as defined in the global variable QUESTIONS_PER_PAGE
@@ -36,7 +36,32 @@ def convert_categories_dict(cat_query_result):
     cat_dict[category.id] = category.type
   return cat_dict
 
+def select_questions(like=None):
+    questions=[]
+    if like is None:
+      questions = Question.query.all()
+    else:
+      questions = Question.query.filter(Question.question.ilike("%{}%".format(like))).all()
+      if len(questions) == 0 :
+         return jsonify({
+                'success':True,
+                'questions': [] ,
+                'total_questions' : 0,
+                'categories': convert_categories_dict(Category.query.all())
+              })
 
+    current_questions = paginate(request , questions)
+    if not current_questions:
+      return None
+
+    return jsonify({
+      'success':True,
+      'questions': current_questions ,
+      'total_questions' : len(questions) ,
+      'categories': convert_categories_dict(Category.query.all())
+    })
+
+##main app
 def create_app(test_config=None):
   # create and configure the app
   app = Flask(__name__)
@@ -90,17 +115,22 @@ def create_app(test_config=None):
 
   @app.route('/questions' , methods=['GET'])
   def get_questions():
-    questions = Question.query.all()
-    current_questions = paginate(request , questions)
-    if not current_questions:
-      abort(404)
+    # questions = Question.query.all()
+    # current_questions = paginate(request , questions)
+    # if not current_questions:
+    #   abort(404)
 
-    return jsonify({
-      'success':True,
-      'questions': current_questions ,
-      'total_questions' : len(questions) ,
-      'categories': convert_categories_dict(Category.query.all())
-    })
+    # return jsonify({
+    #   'success':True,
+    #   'questions': current_questions ,
+    #   'total_questions' : len(questions) ,
+    #   'categories': convert_categories_dict(Category.query.all())
+    # })
+    res = select_questions()
+    if not res:
+      abort(404)
+    else:
+      return res
     
 
   '''
@@ -133,19 +163,27 @@ def create_app(test_config=None):
   @app.route('/questions' , methods=['POST'])
   def add_question():
     data=request.get_json()
-    try:
-      new_question = Question(question = data["question"],
-                              answer=data["answer"],
-                              category = data["category"],
-                              difficulty=data["difficulty"])
-      new_question.insert()
-      return jsonify({
-        'success':True , 
-        'created' : new_question.id
-      })
 
-    except:
-      abort(422)
+    if "searchTerm" in data.keys():
+      res = select_questions(data["searchTerm"])
+      if not res:
+        abort(422)
+      return res
+
+    else:
+      try:
+        new_question = Question(question = data["question"],
+                                answer=data["answer"],
+                                category = data["category"],
+                                difficulty=data["difficulty"])
+        new_question.insert()
+        return jsonify({
+          'success':True , 
+          'created' : new_question.id
+        })
+
+      except:
+        abort(422)
       
   '''
   @TODO: 

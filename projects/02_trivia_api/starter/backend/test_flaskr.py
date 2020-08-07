@@ -85,6 +85,31 @@ class TriviaTestCase(unittest.TestCase):
         res = self.client().post("/questions" , json = {"questionSS":"test question?","answer":"test answer","difficulty":1,"category":1})
         self.assertEqual(res.status_code , 422)
     
+    def test_search_question(self):
+        res= self.client().post("/questions" , json={"searchTerm":"actor"})
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code,200)
+        self.assertEqual(data["total_questions"],1)
+        self.assertEqual(len(data["questions"]) , 1)
+    
+    def test_search_question_noresults(self):
+        res= self.client().post("/questions" , json={"searchTerm":"THISDOESNOTEXIST"})
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code,200)
+        self.assertEqual(data["total_questions"],0)
+        self.assertEqual(len(data["questions"]) , 0)
+    
+    def test_search_question_error(self):
+        res= self.client().post("/questions" , json={"searchINGTerm":"actor"})
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code,422)
+
+        
+
+
+
+
+    
 
     
 
