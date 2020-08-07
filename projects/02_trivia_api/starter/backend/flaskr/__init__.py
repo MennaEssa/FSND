@@ -2,34 +2,84 @@ import os
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from sys import exc_info
 import random
 
 from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
 
+
+def paginate(request , query_result):
+  '''
+  enables pagination a query result as defined in the global variable QUESTIONS_PER_PAGE
+  @param request : the request send to the endpoint
+  @param query_result : the result of the query you need to paginate ; this was written of 
+        the questions query but it should work on queries from other models as well
+  @return a list of predefined size list with the correct starting index.
+  '''
+  page = request.args.get('page', 1, type=int)
+  start =  (page - 1) * QUESTIONS_PER_PAGE
+  end = start + QUESTIONS_PER_PAGE
+  questions = [question.format() for question in query_result]
+  questions_page = questions[start:end]
+  return questions_page
+
+def convert_categories_dict(cat_query_result):
+  '''
+  the front end requires the categories to be formatted as a dict {id:type}
+  so this handles this conversion
+  @param categories query result 
+  @returns categories dict usable by the frontend
+  '''
+  cat_dict={}
+  for category in cat_query_result:
+    cat_dict[category.id] = category.type
+  return cat_dict
+
+
 def create_app(test_config=None):
   # create and configure the app
   app = Flask(__name__)
-  setup_db(app)
-  
+  setup_db(app)   
   '''
-  @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
+  @TODO_DONE: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
   '''
+  cors = CORS(app , resources={r"*": {"origins": "*"} })
 
   '''
-  @TODO: Use the after_request decorator to set Access-Control-Allow
+  @TODO_DONE: Use the after_request decorator to set Access-Control-Allow
   '''
+  @app.after_request
+  def after_request(response):
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,true')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PATCH,POST,DELETE,OPTIONS')
+    return response
 
   '''
-  @TODO: 
+  @TODO_DONE: 
   Create an endpoint to handle GET requests 
   for all available categories.
   '''
+  @app.route('/categories' , methods=['GET'])
+  def get_categories():
+    cat_dict={}
+    try:
+      cat_dict = convert_categories_dict(Category.query.all())
+    except:
+      print(exc_info())
+      abort(500)
+
+    return jsonify({
+      'success': True ,
+      'categories': cat_dict , #[ cat.format() for cat in categories] , 
+      'total_categories' : len(cat_dict)
+    })
+    
 
 
   '''
-  @TODO: 
+  @TODO_DONE: 
   Create an endpoint to handle GET requests for questions, 
   including pagination (every 10 questions). 
   This endpoint should return a list of questions, 
@@ -40,6 +90,21 @@ def create_app(test_config=None):
   ten questions per page and pagination at the bottom of the screen for three pages.
   Clicking on the page numbers should update the questions. 
   '''
+
+  @app.route('/questions' , methods=['GET'])
+  def get_questions():
+    questions = Question.query.all()
+    current_questions = paginate(request , questions)
+    if not current_questions:
+      abort(404)
+
+    return jsonify({
+      'success':True,
+      'questions': current_questions ,
+      'total_questions' : len(questions) ,
+      'categories': convert_categories_dict(Category.query.all())
+    })
+    
 
   '''
   @TODO: 
@@ -98,6 +163,20 @@ def create_app(test_config=None):
   Create error handlers for all expected errors 
   including 404 and 422. 
   '''
+  @app.errorhandler(500)
+  def internal_error(error):
+    return jsonify({ 'error':500,
+             'success':False,
+             'message': 'Internal server error' 
+    }) , 500
+  
+  @app.errorhandler(404)
+  def not_found(error):
+    return jsonify({ 'error':404,
+              'success':False , 
+              'message' : 'resource not found'
+    }) , 404
+
   
   return app
 
