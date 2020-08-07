@@ -41,7 +41,7 @@ class TriviaTestCase(unittest.TestCase):
         data=json.loads(res.data)
         self.assertEqual(res.status_code , 200)
         self.assertEqual(len(data["questions"]) , 10)
-        self.assertEqual(data["total_questions"], 19 )
+        self.assertEqual(data["total_questions"], len(Question.query.all()))
 
     def test_questions_paginated_error(self):
         '''
@@ -65,16 +65,32 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["total_categories"] , 6 )
 
     def test_delete_question(self):
-        res = self.client().delete('/questions/24')
-        self.assertEqual(res.status_code , 200)
-        self.assertIsNone(Question.query.get(5))
-        #restore the item for the other tests
         test_q = Question(question="test?" , answer="test" , category=1 , difficulty=1 )
         test_q.insert()
+        res = self.client().delete('/questions/'+str(test_q.id))
+        self.assertEqual(res.status_code , 200)
+        self.assertIsNone(Question.query.get(test_q.id))
+
     
     def test_delete_question_error(self):
         res = self.client().delete('/questions/100000000')
         self.assertEqual(res.status_code , 404)
+    
+    def test_add_question(self):
+        res = self.client().post("/questions" , json = {"question":"test question?","answer":"test answer","difficulty":1,"category":1})
+        self.assertEqual(res.status_code , 200)
+        self.assertIsNotNone(Question.query.filter(Question.question == "test question?").all())
+    
+    def test_add_question_error(self):
+        res = self.client().post("/questions" , json = {"questionSS":"test question?","answer":"test answer","difficulty":1,"category":1})
+        self.assertEqual(res.status_code , 422)
+    
+
+    
+
+        
+
+
 
 
 

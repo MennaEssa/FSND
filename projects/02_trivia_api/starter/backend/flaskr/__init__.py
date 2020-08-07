@@ -71,7 +71,7 @@ def create_app(test_config=None):
 
     return jsonify({
       'success': True ,
-      'categories': cat_dict , #[ cat.format() for cat in categories] , 
+      'categories': cat_dict , 
       'total_categories' : len(cat_dict)
     })
     
@@ -130,7 +130,23 @@ def create_app(test_config=None):
   the form will clear and the question will appear at the end of the last page
   of the questions list in the "List" tab.  
   '''
+  @app.route('/questions' , methods=['POST'])
+  def add_question():
+    data=request.get_json()
+    try:
+      new_question = Question(question = data["question"],
+                              answer=data["answer"],
+                              category = data["category"],
+                              difficulty=data["difficulty"])
+      new_question.insert()
+      return jsonify({
+        'success':True , 
+        'created' : new_question.id
+      })
 
+    except:
+      abort(422)
+      
   '''
   @TODO: 
   Create a POST endpoint to get questions based on a search term. 
@@ -179,9 +195,9 @@ def create_app(test_config=None):
   @app.errorhandler(404)
   def not_found(error):
     return jsonify({
-      "success": False, 
-      "error": 404,
-      "message": "resource not found"
+      'error': 404,
+      'success': False, 
+      'message': "resource not found"
       }), 404
 
   @app.errorhandler(422)
@@ -190,6 +206,14 @@ def create_app(test_config=None):
               'success':False , 
               'message' : 'could not process request'
     }) , 422
+
+  @app.errorhandler(405)
+  def not_found(error):
+    return jsonify({
+      'error': 405,
+      'success': False, 
+      'message': 'method not allowed'
+      }), 405
 
 
   
