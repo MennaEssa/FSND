@@ -103,6 +103,18 @@ class TriviaTestCase(unittest.TestCase):
         res= self.client().post("/questions" , json={"searchINGTerm":"actor"})
         data=json.loads(res.data)
         self.assertEqual(res.status_code,422)
+    
+    def test_question_by_category(self):
+        res=self.client().get("/categories/5/questions")
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code,200)
+        self.assertEqual(len(data["questions"]), 3)
+        self.assertEqual(data["total_questions"], 3)
+    
+    def test_question_by_category_notexist(self):
+        res=self.client().get("/categories/10000/questions")
+        self.assertEqual(res.status_code,404)
+    
 
         
 

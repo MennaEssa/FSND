@@ -115,17 +115,6 @@ def create_app(test_config=None):
 
   @app.route('/questions' , methods=['GET'])
   def get_questions():
-    # questions = Question.query.all()
-    # current_questions = paginate(request , questions)
-    # if not current_questions:
-    #   abort(404)
-
-    # return jsonify({
-    #   'success':True,
-    #   'questions': current_questions ,
-    #   'total_questions' : len(questions) ,
-    #   'categories': convert_categories_dict(Category.query.all())
-    # })
     res = select_questions()
     if not res:
       abort(404)
@@ -151,7 +140,7 @@ def create_app(test_config=None):
       })
 
   '''
-  @TODO: 
+  @TODO_DONE: 
   Create an endpoint to POST a new question, 
   which will require the question and answer text, 
   category, and difficulty score.
@@ -160,16 +149,26 @@ def create_app(test_config=None):
   the form will clear and the question will appear at the end of the last page
   of the questions list in the "List" tab.  
   '''
+  '''
+  @TODO_DONE: 
+  Create a POST endpoint to get questions based on a search term. 
+  It should return any questions for whom the search term 
+  is a substring of the question. 
+
+  TEST: Search by any phrase. The questions list will update to include 
+  only question that include that string within their question. 
+  Try using the word "title" to start. 
+  '''
   @app.route('/questions' , methods=['POST'])
   def add_question():
     data=request.get_json()
-
+    #search path
     if "searchTerm" in data.keys():
       res = select_questions(data["searchTerm"])
       if not res:
         abort(422)
       return res
-
+    #creation path
     else:
       try:
         new_question = Question(question = data["question"],
@@ -181,21 +180,9 @@ def create_app(test_config=None):
           'success':True , 
           'created' : new_question.id
         })
-
       except:
         abort(422)
       
-  '''
-  @TODO: 
-  Create a POST endpoint to get questions based on a search term. 
-  It should return any questions for whom the search term 
-  is a substring of the question. 
-
-  TEST: Search by any phrase. The questions list will update to include 
-  only question that include that string within their question. 
-  Try using the word "title" to start. 
-  '''
-
   '''
   @TODO: 
   Create a GET endpoint to get questions based on category. 
@@ -204,6 +191,30 @@ def create_app(test_config=None):
   categories in the left column will cause only questions of that 
   category to be shown. 
   '''
+  @app.route("/categories/<int:cat_id>/questions")
+  def get_question_by_category(cat_id , methods=["GET"]):
+    #verify that the category exists
+    if not Category.query.get(cat_id):
+      abort(404)
+
+    questions_per_cat = Question.query.filter(Question.category==cat_id).all()
+    #category is empty.
+    if len(questions_per_cat) == 0 :
+      return jsonify({
+      'success':True,
+      'questions': [] ,
+      'total_questions' : 0 ,
+      'categories': convert_categories_dict(Category.query.all())
+    })
+
+    current_questions = paginate(request , questions_per_cat)
+    return jsonify({
+      'success':True,
+      'questions': current_questions ,
+      'total_questions' : len(questions_per_cat) ,
+      'categories': convert_categories_dict(Category.query.all())
+    })
+
 
 
   '''
@@ -219,7 +230,7 @@ def create_app(test_config=None):
   '''
 
   '''
-  @TODO: 
+  @TODO_DONE: 
   Create error handlers for all expected errors 
   including 404 and 422. 
   '''
