@@ -184,7 +184,7 @@ def create_app(test_config=None):
         abort(422)
       
   '''
-  @TODO: 
+  @TODO_DONE: 
   Create a GET endpoint to get questions based on category. 
 
   TEST: In the "List" tab / main screen, clicking on one of the 
@@ -228,7 +228,45 @@ def create_app(test_config=None):
   one question at a time is displayed, the user is allowed to answer
   and shown whether they were correct or not. 
   '''
+  @app.route("/quizzes" , methods = ['POST'])
+  #{"previous_questions":[],"quiz_category":{"type":"Geography","id":"3"}}
+  def quiz_next_question():
+    try:
+      data=request.get_json()
+      prev_questions=data["previous_questions"]
+      cat_id = int(data["quiz_category"]["id"])
+    except:
+      abort(400)
 
+    questions=[]
+    next_question=None
+    #verify category
+    if cat_id > 0:
+      if not Category.query.get(cat_id) : 
+        abort(422)
+      questions = Question.query.filter(Question.category == cat_id).all()
+    else:
+      questions=Question.query.all()
+    #did we use all the questions?
+    if(len(questions) == len(prev_questions)):
+      return jsonify({
+        'success' : True, 
+        'question' : None
+      })
+
+    while True:
+      next_question = random.choice(questions)
+      if next_question.id not in data["previous_questions"]:
+        break
+      
+    return jsonify({
+      'success': True ,
+      'question' : next_question.format()
+    })
+
+    
+
+    
   '''
   @TODO_DONE: 
   Create error handlers for all expected errors 
@@ -264,6 +302,13 @@ def create_app(test_config=None):
       'message': 'method not allowed'
       }), 405
 
+  @app.errorhandler(400)
+  def not_found(error):
+    return jsonify({
+      'error': 400 , 
+      'success': False, 
+      'message': 'Bad request'
+      }), 400
 
   
   return app

@@ -115,6 +115,29 @@ class TriviaTestCase(unittest.TestCase):
         res=self.client().get("/categories/10000/questions")
         self.assertEqual(res.status_code,404)
     
+    def test_quiz_cat(self):
+        res=self.client().post('/quizzes',json={"previous_questions":[],"quiz_category":{"type":"Geography","id":"3"}})
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code , 200)
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['question']),5)
+        self.assertEqual( data['question']['category'] , 3)
+        
+    def test_quiz_all(self):
+        res=self.client().post('/quizzes',json={"previous_questions":[],"quiz_category":{"type":"click","id":"0"}})
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code , 200)
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['question']),5)
+        self.assertGreater( data['question']['category'] , 0)
+    
+    def test_quiz_error(self):
+        res=self.client().post('/quizzes',json={"previous_questions":[],"quiz_category":{"type":"Geography","id":"222222"}})
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code , 422)
+
+
+    
 
         
 
