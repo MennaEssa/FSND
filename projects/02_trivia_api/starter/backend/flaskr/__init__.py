@@ -161,7 +161,12 @@ def create_app(test_config=None):
   '''
   @app.route('/questions' , methods=['POST'])
   def add_question():
-    data=request.get_json()
+    try:
+      data=request.get_json()
+      if data is None:
+        abort(400)
+    except:
+      abort(400)
     #search path
     if "searchTerm" in data.keys():
       res = select_questions(data["searchTerm"])
