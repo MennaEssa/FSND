@@ -34,30 +34,30 @@ class TriviaTestCase(unittest.TestCase):
     Write at least one test for each test for successful operation and for expected errors.
     """
     def test_questions_paginated(self):
-        '''
+        """
         expects a single page with the correct number of questions
-        '''
-        res = self.client().get('/questions')
+        """
+        res = self.client().get("/questions")
         data=json.loads(res.data)
         self.assertEqual(res.status_code , 200)
         self.assertEqual(len(data["questions"]) , 10)
         self.assertEqual(data["total_questions"], len(Question.query.all()))
 
     def test_questions_paginated_error(self):
-        '''
+        """
         if pagination fails because of the page parameter , the client
         should recieve a 404 error instead of crashing the server.
-        '''
-        res = self.client().get('/questions' , query_string={'page': 1000})
+        """
+        res = self.client().get("/questions" , query_string={"page": 1000})
         data=json.loads(res.data)
         self.assertEqual(res.status_code , 404)
 
     
     def test_get_categories(self):
-        '''
+        """
         confirm the correct response format require by the frontend
-        '''
-        res = self.client().get('/categories')
+        """
+        res = self.client().get("/categories")
         data = json.loads(res.data)
         self.assertEqual(res.status_code , 200)
         self.assertIsInstance(data["categories"] , dict)
@@ -65,23 +65,35 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["total_categories"] , 6 )
 
     def test_delete_question(self):
+        """
+        adds a dummy question then attempts to delete it ; verify expected behavior.
+        """
         test_q = Question(question="test?" , answer="test" , category=1 , difficulty=1 )
         test_q.insert()
-        res = self.client().delete('/questions/'+str(test_q.id))
+        res = self.client().delete("/questions/"+str(test_q.id))
         self.assertEqual(res.status_code , 200)
         self.assertIsNone(Question.query.get(test_q.id))
 
     
     def test_delete_question_error(self):
-        res = self.client().delete('/questions/100000000')
+        """
+        attempting to delete a question that does not exist should return 404
+        """
+        res = self.client().delete("/questions/100000000")
         self.assertEqual(res.status_code , 404)
     
     def test_add_question(self):
+        """
+        verify addition of a new question 
+        """
         res = self.client().post("/questions" , json = {"question":"test question?","answer":"test answer","difficulty":1,"category":1})
         self.assertEqual(res.status_code , 200)
         self.assertIsNotNone(Question.query.filter(Question.question == "test question?").all())
     
     def test_add_question_error(self):
+        """
+        return 422 if a a json data is no processable i.e wrong field name
+        """
         res = self.client().post("/questions" , json = {"questionSS":"test question?","answer":"test answer","difficulty":1,"category":1})
         self.assertEqual(res.status_code , 422)
     
@@ -116,23 +128,32 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code,404)
     
     def test_quiz_cat(self):
-        res=self.client().post('/quizzes',json={"previous_questions":[],"quiz_category":{"type":"Geography","id":"3"}})
+        """
+        test correct behaviour if we select a secific category for the quiz 
+        """
+        res=self.client().post("/quizzes",json={"previous_questions":[],"quiz_category":{"type":"Geography","id":"3"}})
         data=json.loads(res.data)
         self.assertEqual(res.status_code , 200)
-        self.assertTrue(data['success'])
-        self.assertEqual(len(data['question']),5)
-        self.assertEqual( data['question']['category'] , 3)
+        self.assertTrue(data["success"])
+        self.assertEqual(len(data["question"]),5)
+        self.assertEqual( data["question"]["category"] , 3)
         
     def test_quiz_all(self):
-        res=self.client().post('/quizzes',json={"previous_questions":[],"quiz_category":{"type":"click","id":"0"}})
+        """
+        test correct behaviour if a use ALL  mode in the quiz
+        """
+        res=self.client().post("/quizzes",json={"previous_questions":[],"quiz_category":{"type":"click","id":"0"}})
         data=json.loads(res.data)
         self.assertEqual(res.status_code , 200)
-        self.assertTrue(data['success'])
-        self.assertEqual(len(data['question']),5)
-        self.assertGreater( data['question']['category'] , 0)
+        self.assertTrue(data["success"])
+        self.assertEqual(len(data["question"]),5)
+        self.assertGreater( data["question"]["category"] , 0)
     
     def test_quiz_error(self):
-        res=self.client().post('/quizzes',json={"previous_questions":[],"quiz_category":{"type":"Geography","id":"222222"}})
+        """
+        test that we get error 422 if a question is requested with a non existent category.
+        """
+        res=self.client().post("/quizzes",json={"previous_questions":[],"quiz_category":{"type":"Geography","id":"222222"}})
         data=json.loads(res.data)
         self.assertEqual(res.status_code , 422)
 

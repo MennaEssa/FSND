@@ -218,7 +218,7 @@ def create_app(test_config=None):
 
 
   '''
-  @TODO: 
+  @TODO_DONE: 
   Create a POST endpoint to get questions to play the quiz. 
   This endpoint should take category and previous question parameters 
   and return a random questions within the given category, 
@@ -229,7 +229,6 @@ def create_app(test_config=None):
   and shown whether they were correct or not. 
   '''
   @app.route("/quizzes" , methods = ['POST'])
-  #{"previous_questions":[],"quiz_category":{"type":"Geography","id":"3"}}
   def quiz_next_question():
     try:
       data=request.get_json()
@@ -240,14 +239,17 @@ def create_app(test_config=None):
 
     questions=[]
     next_question=None
-    #verify category
-    if cat_id > 0:
-      if not Category.query.get(cat_id) : 
+
+    #category of id 0 means all
+    if cat_id == 0:
+      questions=Question.query.all()
+    else:
+      #verify that the category is valid and get the correct set of questions.
+      if not Category.query.get(cat_id): 
         abort(422)
       questions = Question.query.filter(Question.category == cat_id).all()
-    else:
-      questions=Question.query.all()
-    #did we use all the questions?
+
+    #check if we used all the questions.
     if(len(questions) == len(prev_questions)):
       return jsonify({
         'success' : True, 
