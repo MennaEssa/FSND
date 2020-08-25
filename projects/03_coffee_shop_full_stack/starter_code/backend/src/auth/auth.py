@@ -32,7 +32,6 @@ class AuthError(Exception):
 '''
 def get_token_auth_header():
     auth_headers=request.headers.get('Authorization',None)
-    print(auth_headers)
     if auth_headers is None:
         raise AuthError({
             'code': 'invalid_header',
@@ -73,8 +72,7 @@ def check_permissions(permission, payload):
                             'code':'unauthorized_access' ,
                             'description': 'un authorized access'},
                         status_code = 403)
-    print("has permission")
-    return true
+    return True
 
 '''
 @TODO_DONE implement verify_decode_jwt(token) method
@@ -93,7 +91,15 @@ def verify_decode_jwt(token):
    # Code provided by Auth0 docs
     jsonurl = urlopen(f'https://{AUTH0_DOMAIN}/.well-known/jwks.json')
     jwks = json.loads(jsonurl.read())
-    unverified_header = jwt.get_unverified_header(token)
+    try:
+        unverified_header = jwt.get_unverified_header(token)
+    except jwt.JWTError:
+        raise AuthError({
+            'code': 'invalid_header',
+            'description': 'Authorization malformed.'
+        }, 401)
+
+
     rsa_key = {}
     if 'kid' not in unverified_header:
         raise AuthError({
@@ -160,7 +166,6 @@ def requires_auth(permission=''):
             token = get_token_auth_header()
             payload = verify_decode_jwt(token)
             check_permissions(permission, payload)
-            print(payload)
             return f(*args, **kwargs)
         return wrapper
     return requires_auth_decorator
