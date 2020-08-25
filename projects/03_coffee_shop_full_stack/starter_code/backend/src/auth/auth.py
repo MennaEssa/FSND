@@ -30,21 +30,23 @@ class AuthError(Exception):
         it should raise an AuthError if the header is malformed
     return the token part of the header
 '''
-def get_token_auth_header(request):
+def get_token_auth_header():
     auth_headers=request.headers.get('Authorization',None)
+    print(auth_headers)
     if auth_headers is None:
-        raise AuthError(error={
-                            'code' :'missing_auth_headers',
-                            'descriptions': 'Authentication headers missing'},
-                        status_code = 401)
+        raise AuthError({
+            'code': 'invalid_header',
+            'description': 'Authorization headers do not exist.'
+        }, 401)
 
     auth_headrs_parts=auth_headers.split(' ')
 
     if ( len(auth_headrs_parts) < 2 ) or (auth_headrs_parts[0].lower() != 'bearer') :
-        raise AuthError(error={
-                            'code':'invalid_auth_headers',
-                            'description': 'malformed authentincation headers'},
-                        status_code = 401)
+        raise AuthError({
+            'code': 'invalid_token_format',
+            'description': 'malformed token.'
+        }, 401)
+
     return auth_headrs_parts[1]
 
         
@@ -71,6 +73,7 @@ def check_permissions(permission, payload):
                             'code':'unauthorized_access' ,
                             'description': 'un authorized access'},
                         status_code = 403)
+    print("has permission")
     return true
 
 '''
@@ -157,7 +160,9 @@ def requires_auth(permission=''):
             token = get_token_auth_header()
             payload = verify_decode_jwt(token)
             check_permissions(permission, payload)
-            return f(payload, *args, **kwargs)
-
+            print(payload)
+            return f(*args, **kwargs)
         return wrapper
     return requires_auth_decorator
+    
+

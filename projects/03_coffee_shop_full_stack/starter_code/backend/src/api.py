@@ -29,7 +29,6 @@ CORS(app)
 '''
 @app.route('/drinks' , methods=['GET'])
 def list_drinks():
-
     drinks = Drink.query.all()
     return jsonify ({
         'success': True,
@@ -38,7 +37,7 @@ def list_drinks():
 
 
 '''
-@TODO implement endpoint
+@TODO_DONE implement endpoint
     GET /drinks-detail
         it should require the 'get:drinks-detail' permission
         it should contain the drink.long() data representation
@@ -46,6 +45,7 @@ def list_drinks():
         or appropriate status code indicating reason for failure
 '''
 @app.route('/drinks-detail' , methods=['GET'])
+@requires_auth(permission="get:drinks-detail")
 def list_drinks_details():
     drinks = Drink.query.all()
     return jsonify ({
@@ -55,7 +55,7 @@ def list_drinks_details():
 
 
 '''
-@TODO implement endpoint
+@TODO_DONE implement endpoint
     POST /drinks
         it should create a new row in the drinks table
         it should require the 'post:drinks' permission
@@ -63,8 +63,8 @@ def list_drinks_details():
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the newly created drink
         or appropriate status code indicating reason for failure'
 '''
-@requires_auth(permission='post:drinks')
 @app.route('/drinks' , methods=['POST'])
+@requires_auth(permission='post:drinks')
 def create_drink():
     try:
         drink_request = request.get_json()
@@ -145,3 +145,10 @@ def unprocessable(error):
 @TODO implement error handler for AuthError
     error handler should conform to general task above 
 '''
+@app.errorhandler(AuthError)
+def auth_error(error):
+    return jsonify({
+        "success":False,
+        "error" : error.status_code,
+        "message": error.error["description"]
+    }) , error.status_code
