@@ -16,17 +16,25 @@ CORS(app)
 !! NOTE THIS WILL DROP ALL RECORDS AND START YOUR DB FROM SCRATCH
 !! NOTE THIS MUST BE UNCOMMENTED ON FIRST RUN
 '''
-# db_drop_and_create_all()
+#db_drop_and_create_all()
 
 ## ROUTES
 '''
-@TODO implement endpoint
+@TODO_DONE implement endpoint
     GET /drinks
         it should be a public endpoint
         it should contain only the drink.short() data representation
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks' , methods=['GET'])
+def list_drinks():
+
+    drinks = Drink.query.all()
+    return jsonify ({
+        'success': True,
+        'drinks' : [ drink.short() for drink in drinks ]
+    })
 
 
 '''
@@ -37,6 +45,13 @@ CORS(app)
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks-detail' , methods=['GET'])
+def list_drinks_details():
+    drinks = Drink.query.all()
+    return jsonify ({
+        'success': True,
+        'drinks' : [ drink.long() for drink in drinks ]
+    })
 
 
 '''
@@ -46,8 +61,30 @@ CORS(app)
         it should require the 'post:drinks' permission
         it should contain the drink.long() data representation
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the newly created drink
-        or appropriate status code indicating reason for failure
+        or appropriate status code indicating reason for failure'
 '''
+@requires_auth(permission='post:drinks')
+@app.route('/drinks' , methods=['POST'])
+def create_drink():
+    try:
+        drink_request = request.get_json()
+    except Exception as e:
+        print(str(e))
+        abort(400)    
+    try:
+        new_drink=Drink( title = drink_request['title'],
+                         recipe = json.dumps(drink_request['recipe']))
+        new_drink.insert()
+    except KeyError:
+        abort(400)
+    
+    return jsonify({'success':True,
+                    'drinks': [new_drink.long()] 
+                   })
+
+
+    
+
 
 
 '''
